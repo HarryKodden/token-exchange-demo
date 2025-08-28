@@ -1039,7 +1039,7 @@ def get_dynamic_curl_commands():
     
     logger.debug("📋 Generated commands preview:")
     for step, cmd in commands.items():
-        logger.debug(f"  {step}: {cmd.split('\\\\')[0]}...")  # Show first line only
+#       logger.debug(f"  {step}: {cmd.split('\\\\')[0]}...")  # Show first line only
         logger.debug(f"  {step} raw command (repr): {repr(cmd[:100])}...")
         
         # Extract and log the endpoint being used
