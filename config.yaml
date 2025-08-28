@@ -1,0 +1,247 @@
+steps:
+- id: "a"
+  title: "Backend Client Registration"
+  description: "Register the backend client with OAuth2 server"
+  manual: false
+
+- id: "b"
+  title: "Frontend Client Registration"
+  description: "Register the frontend client with OAuth2 server"
+  manual: false
+
+- id: "c"
+  title: "User Authentication"
+  description: "Initiate device authorization flow"
+  manual: false
+
+- id: "d"
+  title: "Token Request & Introspection"
+  description: "Exchange device code for access token"
+  manual: false
+
+- id: "e"
+  title: "Userinfo Request"
+  description: "Retrieve user information"
+  manual: false
+
+- id: "f"
+  title: "Manual Step"
+  description: "Manual intervention required"
+  manual: true
+
+- id: "g"
+  title: "Token Exchange"
+  description: "Exchange refresh token for new token"
+  manual: false
+
+- id: "h"
+  title: "Refresh Token Request"
+  description: "Request new access token using refresh token"
+  manual: false
+
+- id: "i"
+  title: "Backend Token Introspection"
+  description: "Introspect the backend access token"
+  manual: false
+
+- id: "j"
+  title: "Backend Userinfo Request"
+  description: "Retrieve user info with backend token"
+  manual: false
+
+dependencies:
+  # First step has no dependencies
+  a: []
+
+  # Step b depends on step a (needs backend client ID)
+  b: [ "a" ]
+
+  # Step c depends on step b (needs frontend client credentials)
+  c: [ "b" ]
+
+  # Step d depends on steps b and c (needs frontend client + device code)
+  d: [ "b", "c" ]
+
+  # Step e depends on step d (needs access token)
+  e: [ "d" ]
+
+  # Step f is manual (no automatic dependencies)
+  f: []
+
+  # Step g depends on steps a and d (needs backend client + refresh token)
+  # OR step g can depend on step f if f is completed (manual step)
+  g: [ "a", "d", "f" ]
+
+  # Step h depends on steps a and g (needs backend client + refresh token from g)
+  h: [ "a", "g" ]
+
+  # Step i depends on step h (needs access token from h)
+  i: [ "h" ]
+
+  # Step j depends on step h (needs access token from h)
+  j: [ "h" ]
+
+curl_templates:
+  a: |
+    curl -X POST {registration_endpoint}
+      -H "Content-Type: application/json"
+      -d {
+        "redirect_uris": [],
+        "grant_types": [
+            "client_credentials",
+            "refresh_token",
+            "urn:ietf:params:oauth:grant-type:token-exchange"
+        ],
+        "scope": "openid profile offline_access"
+      }
+
+  b: |
+    curl -X POST {registration_endpoint}
+      -H "Content-Type: application/json"
+      -d {
+        "grant_types": [
+            "client_credentials",
+            "authorization_code",
+            "refresh_token",
+            "urn:ietf:params:oauth:grant-type:device_code",
+            "urn:ietf:params:oauth:grant-type:token-exchange"
+        ],
+        "redirect_uris": ["http://localhost:8080/callback"],
+        "scope": "openid profile offline_access",
+        "audience": [
+            "{backend-client-id}"
+        ]
+      }
+
+  c: |
+    curl -X POST {device_authorization_endpoint}
+      -H "Content-Type: application/x-www-form-urlencoded"
+      -u "{frontend-client-id}:{frontend-client-secret}"
+      -d 'client_id={frontend-client-id}'
+      -d 'scope=openid profile offline_access'
+      -d 'audience={backend-client-id}'
+
+  d: |
+    curl -X POST {token_endpoint}
+      -H "Content-Type: application/x-www-form-urlencoded"
+      -u "{frontend-client-id}:{frontend-client-secret}"
+      -d 'client_id={frontend-client-id}'
+      -d 'device_code={device_code}'
+      -d 'grant_type=urn:ietf:params:oauth:grant-type:device_code'
+
+  e: |
+    curl -X GET {userinfo_endpoint}
+      -H "Authorization: Bearer {access_token}"
+      -H "Accept: application/json"
+
+  f: |
+    # Manual step - no curl command
+    echo "Manual intervention required"
+
+  g: |
+    curl -X POST {token_endpoint}
+      -H "Content-Type: application/x-www-form-urlencoded"
+      -u "{backend-client-id}:{backend-client-secret}"
+      -d "grant_type=urn:ietf:params:oauth:grant-type:token-exchange"
+      -d "subject_token={refresh_token}"
+      -d "subject_token_type=urn:ietf:params:oauth:token-type:refresh_token"
+      -d "requested_token_type=urn:ietf:params:oauth:token-type:refresh_token"
+      -d "scope=openid offline_access profile"
+
+  h: |
+    curl -X POST {token_endpoint}
+      -H "Content-Type: application/x-www-form-urlencoded"
+      -u "{backend-client-id}:{backend-client-secret}"
+      -d "grant_type=refresh_token"
+      -d "refresh_token={refresh_token}"
+      -d "client_id={backend-client-id}"
+      -d "scope=openid profile"
+
+  i: |
+    curl -X POST {introspection_endpoint}
+      -H "Content-Type: application/x-www-form-urlencoded"
+      -u "{backend-client-id}:{backend-client-secret}"
+      -d "token={access_token}"
+      -d "token_type_hint=access_token"
+
+  j: |
+    curl -X GET {userinfo_endpoint}
+      -H "Authorization: Bearer {access_token}"
+      -H "Accept: application/json"
+
+substitution_rules:
+  # Step a: No substitutions needed (creates client credentials)
+
+  # Step b: Replace backend client ID from step a
+  b:
+    data:
+      "{backend-client-id}": "a.client_id"
+
+  # Step c: Replace frontend credentials from step b, backend client ID from step a
+  c:
+    url:
+      "{frontend-client-id}": "b.client_id"
+      "{backend-client-id}": "a.client_id"
+    auth:
+      "{frontend-client-id}": "b.client_id"
+      "{frontend-client-secret}": "b.client_secret"
+    data:
+      "{frontend-client-id}": "b.client_id"
+      "{backend-client-id}": "a.client_id"
+
+  # Step d: Replace frontend credentials and device code
+  d:
+    auth:
+      "{frontend-client-id}": "b.client_id"
+      "{frontend-client-secret}": "b.client_secret"
+    data:
+      "{frontend-client-id}": "b.client_id"
+      "{device_code}": "c.device_code"
+
+  # Step e: Replace access token from step d
+  e:
+    headers:
+      "{access_token}": "d.access_token"
+
+  # Step f: Manual step, no substitutions
+
+  # Step g: Replace backend credentials and refresh token
+  g:
+    auth:
+      "{backend-client-id}": "a.client_id"
+      "{backend-client-secret}": "a.client_secret"
+    data:
+      "{refresh_token}": "d.refresh_token"
+
+  # Step h: Replace backend credentials and refresh token from step g
+  h:
+    auth:
+      "{backend-client-id}": "a.client_id"
+      "{backend-client-secret}": "a.client_secret"
+    data:
+      "{refresh_token}": "g.refresh_token"
+      "{backend-client-id}": "a.client_id"
+
+  # Step i: Replace access token from step h
+  i:
+    auth:
+      "{backend-client-id}": "a.client_id"
+      "{backend-client-secret}": "a.client_secret"
+    data:
+      "{access_token}": "h.access_token"
+
+  # Step j: Replace access token from step h
+  j:
+    headers:
+      "{access_token}": "h.access_token"
+
+execution_order: [ "a", "b", "c", "d", "e", "f", "g", "h", "i", "j" ]
+
+# Default endpoint fallbacks (used when discovery doesn't provide them)
+endpoint_defaults:
+  registration_endpoint: "/register"
+  device_authorization_endpoint: "/device/authorize"
+  token_endpoint: "/token"
+  userinfo_endpoint: "/userinfo"
+  introspection_endpoint: "/introspect"
+  end_session_endpoint: "/logout"
