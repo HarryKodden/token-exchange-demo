@@ -141,39 +141,6 @@ st.markdown("*Interactive demonstration of OAuth2 Token Exchange steps*")
 logger.info("🚀 Streamlit app started")
 logger.debug(f"Session state keys: {list(st.session_state.keys())}")
 
-# Debug section (collapsible)
-with st.expander("🐛 Debug Information", expanded=False):
-    st.write("**Session State Status:**")
-    debug_col1, debug_col2 = st.columns(2)
-
-    with debug_col1:
-        st.write(f"✅ OAuth2 Validated: {st.session_state.oauth_server_validated}")
-        st.write(f"🌐 Server URL: {st.session_state.oauth_server_url}")
-        st.write(f"📡 Commands Initialized: {st.session_state.get('curl_commands_initialized', False)}")
-
-    with debug_col2:
-        st.write(f"📊 Step Responses Count: {len(st.session_state.step_responses)}")
-        st.write(f"🎯 Current Step: {st.session_state.current_step}")
-        st.write(f"📝 Commands Available: {len(st.session_state.get('curl_commands', {}))}")
-
-    if st.button("🔄 Refresh Debug Info"):
-        st.rerun()
-
-    if st.button("🔧 Regenerate CURL Commands"):
-        if st.session_state.oauth_server_validated:
-            st.session_state.debug_regenerate_commands = True
-            st.rerun()
-        else:
-            st.warning("⚠️ Please validate OAuth2 server first")
-
-    if st.button("🧪 Test CURL Parsing"):
-        st.session_state.debug_test_curl = True
-        st.rerun()
-
-    if st.button("🧪 Test JSON Parsing"):
-        st.session_state.debug_test_json = True
-        st.rerun()
-
 # Initialize session state for CURL commands
 if 'curl_commands_initialized' not in st.session_state:
     st.session_state.curl_commands_initialized = False
@@ -329,84 +296,62 @@ def update_step_status(step: str, success: bool):
     logger.debug(f"📊 Step {step} status changed from {old_status} to {st.session_state.step_status[step]}")
 
 def show_step_response_modal(step: str):
-    """Show step response in a modal-like popup display"""
-    if step in st.session_state.step_responses:
-        response = st.session_state.step_responses[step]
+    """Show step response in a modal popup using Streamlit's dialog component"""
 
-        # Create modal popup styling
-        st.markdown("""
-        <style>
-        .modal-popup {
-            background: white;
-            border: 3px solid #28a745;
-            border-radius: 12px;
-            padding: 20px;
-            margin: 20px 0;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            position: relative;
-            z-index: 1000;
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #28a745;
-            padding-bottom: 10px;
-        }
-        .modal-close-btn {
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            cursor: pointer;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.2s;
-        }
-        .modal-close-btn:hover {
-            background: #c82333;
-        }
-        .response-json {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            padding: 15px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            white-space: pre-wrap;
-            overflow-x: auto;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        </style>
-        """, unsafe_allow_html=True)
+    # Add custom CSS to make the dialog wider for response data
+    st.markdown("""
+    <style>
+    /* Target the dialog container */
+    div[data-testid="stDialog"] {
+        width: 95vw !important;
+        max-width: 1400px !important;
+        max-height: 90vh !important;
+    }
 
-        # Modal popup container
-        with st.container():
-            st.markdown('<div class="modal-popup">', unsafe_allow_html=True)
+    /* Target the dialog content area */
+    div[data-testid="stDialog"] > div[data-testid="stVerticalBlock"] {
+        width: 100% !important;
+        max-width: none !important;
+    }
 
-            # Header with title and close button
-            col1, col2 = st.columns([4, 1])
-            with col1:
-                st.markdown(f"### 📄 Step {step} Response")
-            with col2:
-                if st.button("❌", key="close_modal", help="Close modal"):
-                    st.session_state.show_response_modal = None
-                    st.rerun()
+    /* Make code blocks wider and more readable */
+    div[data-testid="stCodeBlock"] {
+        max-width: none !important;
+        max-height: 500px !important;
+        overflow-y: auto !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    @st.dialog(f"📄 Step {step} Response")
+    def modal_content():
+        if step in st.session_state.step_responses:
+            response = st.session_state.step_responses[step]
 
             # Response content
-            st.markdown("**Response Data:**")
-            json_str = json.dumps(response, indent=2, ensure_ascii=False)
+            st.markdown("**📊 Response Data:**")
 
-            # Use Streamlit's code component for better formatting
+            # Format JSON with syntax highlighting
+            json_str = json.dumps(response, indent=2, ensure_ascii=False)
             st.code(json_str, language="json")
 
-            st.markdown('</div>', unsafe_allow_html=True)
+            # Show HTTP status if available
+            if "_http_status" in response:
+                status = response["_http_status"]
+                status_color = "🟢" if status < 400 else "🔴"
+                st.markdown(f"**{status_color} HTTP Status:** {status} {response.get('_http_reason', '')}")
+
+            # Close button
+            if st.button("❌ Close", use_container_width=True):
+                st.session_state.show_response_modal = None
+                st.rerun()
+        else:
+            st.error(f"No response available for step {step}")
+            if st.button("❌ Close", use_container_width=True):
+                st.session_state.show_response_modal = None
+                st.rerun()
+
+    modal_content()
 
 def show_step_response_tooltip(step: str):
     """Show step response in a tooltip-like display"""
@@ -1246,6 +1191,39 @@ with st.expander("📊 Step Status Overview", expanded=False):
             st.write(f"**Response Types:** {', '.join(response_types)}")
             grant_types = endpoints.get('grant_types_supported', [])
             st.write(f"**Grant Types:** {', '.join(grant_types)}")
+
+# Debug section (collapsible)
+with st.expander("🐛 Debug Information", expanded=False):
+    st.write("**Session State Status:**")
+    debug_col1, debug_col2 = st.columns(2)
+
+    with debug_col1:
+        st.write(f"✅ OAuth2 Validated: {st.session_state.oauth_server_validated}")
+        st.write(f"🌐 Server URL: {st.session_state.oauth_server_url}")
+        st.write(f"📡 Commands Initialized: {st.session_state.get('curl_commands_initialized', False)}")
+
+    with debug_col2:
+        st.write(f"📊 Step Responses Count: {len(st.session_state.step_responses)}")
+        st.write(f"🎯 Current Step: {st.session_state.current_step}")
+        st.write(f"📝 Commands Available: {len(st.session_state.get('curl_commands', {}))}")
+
+    if st.button("🔄 Refresh Debug Info"):
+        st.rerun()
+
+    if st.button("🔧 Regenerate CURL Commands"):
+        if st.session_state.oauth_server_validated:
+            st.session_state.debug_regenerate_commands = True
+            st.rerun()
+        else:
+            st.warning("⚠️ Please validate OAuth2 server first")
+
+    if st.button("🧪 Test CURL Parsing"):
+        st.session_state.debug_test_curl = True
+        st.rerun()
+
+    if st.button("🧪 Test JSON Parsing"):
+        st.session_state.debug_test_json = True
+        st.rerun()
 
 # General Setup Steps (Grey)
 with col1:
