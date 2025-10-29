@@ -1,0 +1,122 @@
+# Default values for token-exchange-demo.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Application configuration
+replicaCount: 1
+
+image:
+  repository: harrykodden/token-exchange-demo
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Service account configuration
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# Pod Security Context
+podSecurityContext: {}
+  # fsGroup: 2000
+
+# Security Context
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# Application service configuration
+service:
+  type: ClusterIP
+  port: 8501
+  targetPort: 8501
+  annotations: {}
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: token-exchange-demo.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: token-exchange-demo-tls
+  #    hosts:
+  #      - token-exchange-demo.local
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
+
+# Environment variables
+env:
+  - name: LOGLEVEL
+    value: "info"
+  - name: PYTHONUNBUFFERED
+    value: "1"
+
+# ConfigMap for application configuration
+config:
+  # The config.yaml content will be mounted as a ConfigMap
+  enabled: true
+
+# Health check configuration
+healthCheck:
+  enabled: true
+  path: "/?healthz=true"
+  port: 8501
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+# Persistence configuration
+persistence:
+  enabled: false
+  # accessMode: ReadWriteOnce
+  # size: 1Gi
+  # storageClass: ""
+
+# Additional volumes
+extraVolumes: []
+# - name: extra-volume
+#   emptyDir: {}
+
+# Additional volume mounts
+extraVolumeMounts: []
+# - name: extra-volume
+#   mountPath: /extra

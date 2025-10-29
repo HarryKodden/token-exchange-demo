@@ -1,0 +1,17 @@
+apiVersion: v2
+name: token-exchange-demo
+description: A Helm chart for deploying the RFC8693 Token Exchange Demo application
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - oauth2
+  - token-exchange
+  - streamlit
+  - demo
+home: https://github.com/HarryKodden/token-exchange-demo
+sources:
+  - https://github.com/HarryKodden/token-exchange-demo
+maintainers:
+  - name: Harry Kodden
+    email: harry.kodden@surf.nl

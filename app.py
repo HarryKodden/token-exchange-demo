@@ -413,7 +413,14 @@ def create_step_button_with_hover(step: str, title: str, disabled: bool = False)
         if 'verification_uri_complete' in response:
             verification_url = response['verification_uri_complete']
             user_code = response.get('user_code', 'N/A')
-            
+
+            # Ensure verification URLs are full FQDN URLs
+            base_url = st.session_state.oauth_server_url.rstrip('/')
+            if verification_url.startswith('/'):
+                # Relative URL - prepend base URL
+                verification_url = base_url + verification_url
+                logger.debug(f"🔗 Constructed full verification URL: {verification_url}")
+
             st.markdown("---")
 
             # Display clickable verification URL
@@ -794,6 +801,19 @@ def parse_and_execute_curl(curl_cmd: str, step: str) -> tuple[bool, Dict[str, An
         # Add HTTP status info
         response_data["_http_status"] = response.status_code
         response_data["_http_reason"] = response.reason
+
+        # Post-process verification URLs for device authorization responses
+        if step == 'c' and response_data.get("_http_status", 0) < 400:
+            base_url = st.session_state.oauth_server_url.rstrip('/')
+            # Ensure verification URLs are full FQDN URLs
+            for url_field in ['verification_uri', 'verification_uri_complete']:
+                if url_field in response_data and response_data[url_field]:
+                    url = response_data[url_field]
+                    if url.startswith('/'):
+                        # Relative URL - prepend base URL
+                        full_url = base_url + url
+                        response_data[url_field] = full_url
+                        logger.debug(f"🔗 Constructed full {url_field}: {full_url}")
 
         success = response.status_code < 400
         logger.info(f"{'✅' if success else '❌'} Request {'successful' if success else 'failed'}")
