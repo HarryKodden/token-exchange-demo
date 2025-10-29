@@ -395,7 +395,7 @@ This application demonstrates a complete OAuth2 ecosystem with the following flo
 <style>
 .note {
   fill: #e8f5e8 !important;
-  stroke: #0c5b0eff !important;
+  stroke: #4caf50 !important;
   stroke-width: 2px !important;
 }
 .noteText {
@@ -411,6 +411,13 @@ sequenceDiagram
     participant B as Backend Service
     participant O as OAuth Server
 
+
+    Note over B,O: Register Backend Client...
+    B->>O: POST /register (backend client)
+    O-->>B: client_id, client_secret
+    Note over F,O: Register Frontend Client...
+    F->>O: POST /register (frontend client,<br/>add backend client id to the Audience)
+    O-->>F: client_id, client_secret
 
     Note over U,O: Device Authorization Flow
     F->>O: POST /device/authorize (client_id)
