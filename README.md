@@ -392,12 +392,25 @@ This application demonstrates a complete OAuth2 ecosystem with the following flo
 
 ### Complete Token Lifecycle
 
+<style>
+.note {
+  fill: #e8f5e8 !important;
+  stroke: #0c5b0eff !important;
+  stroke-width: 2px !important;
+}
+.noteText {
+  fill: #2e7d32 !important;
+  font-weight: bold !important;
+}
+</style>
+
 ```mermaid
 sequenceDiagram
     participant U as User
     participant F as Frontend Client
     participant B as Backend Service
     participant O as OAuth Server
+
 
     Note over U,O: Device Authorization Flow
     F->>O: POST /device/authorize (client_id)
@@ -408,6 +421,10 @@ sequenceDiagram
     U->>O: Grant permission
     F->>O: POST /token (device_code, client_id, client_secret)
     O-->>F: access_token, refresh_token
+
+    Note over F,B: 🔐 SECURE TOKEN HANDOVER
+    F->>B: Transfer refresh_token
+    Note over F,B: 🔑 Token bound to backend client
 
     Note over B,O: Token Exchange Flow
     B->>O: POST /token (grant_type=token-exchange)
@@ -426,6 +443,9 @@ sequenceDiagram
     B->>O: GET /userinfo (Authorization: Bearer)
     O-->>B: user profile information
 ```
+
+%% Style notes green
+style note_green fill:#e8f5e8,stroke:#4caf50,stroke-width:2px,color:#2e7d32
 
 ### Security Benefits Demonstrated
 
