@@ -103,3 +103,7 @@ helm uninstall token-exchange-demo
 ## Development
 
 For development, you can mount the source code as a volume by modifying the deployment template or using development overrides.
+
+## License
+
+This Helm chart is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.

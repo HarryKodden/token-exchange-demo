@@ -1,5 +1,10 @@
 # Streamlit OAuth2 Token Exchange Demo
 
+[![CI](https://github.com/HarryKodden/token-exchange-demo/actions/workflows/image.yml/badge.svg)](https://github.com/HarryKodden/token-exchange-demo/actions/workflows/image.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)](https://docker.com)
+[![Kubernetes](https://img.shields.io/badge/kubernetes-%23326ce5.svg?style=flat&logo=kubernetes&logoColor=white)](https://kubernetes.io)
+
 This is a Dockerized Streamlit application for demonstrating OAuth2 Token Exchange flows. The application is now **config-driven** for maximum flexibility and maintainability.
 
 ## 📋 Configuration-Driven Architecture
@@ -197,6 +202,63 @@ substitution_rules:
 
    ```bash
    docker-compose logs -f
+   ```
+
+### Using Kubernetes (Helm)
+
+1. **Prerequisites:**
+   - Kubernetes cluster (1.19+)
+   - Helm 3.0+
+   - Docker Hub access (for pulling images)
+
+2. **Build and push the Docker image:**
+
+   ```bash
+   docker build -t harrykodden/token-exchange-demo:latest .
+   docker push harrykodden/token-exchange-demo:latest
+   ```
+
+3. **Install the Helm chart:**
+
+   ```bash
+   # Add your Docker Hub credentials to pull the image
+   kubectl create secret docker-registry dockerhub-secret \
+     --docker-server=https://index.docker.io/v1/ \
+     --docker-username=your-username \
+     --docker-password=your-password \
+     --docker-email=your-email@example.com
+
+   # Install the application
+   helm install token-exchange-demo ./helm/token-exchange-demo
+   ```
+
+4. **Access the application:**
+
+   ```bash
+   # Port forward to access locally
+   kubectl port-forward svc/token-exchange-demo 8501:8501
+
+   # Or create an Ingress for external access
+   # Edit helm/token-exchange-demo/values.yaml to enable ingress
+   ```
+
+5. **Monitor the deployment:**
+
+   ```bash
+   # Check pod status
+   kubectl get pods -l app.kubernetes.io/name=token-exchange-demo
+
+   # View logs
+   kubectl logs -l app.kubernetes.io/name=token-exchange-demo -f
+
+   # Upgrade the deployment
+   helm upgrade token-exchange-demo ./helm/token-exchange-demo
+   ```
+
+6. **Uninstall:**
+
+   ```bash
+   helm uninstall token-exchange-demo
    ```
 
 ## 🎛️ Customizing the Workflow
