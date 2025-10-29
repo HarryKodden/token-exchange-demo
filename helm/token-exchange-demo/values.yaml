@@ -7,7 +7,7 @@ replicaCount: 1
 
 image:
   repository: harrykodden/token-exchange-demo
-  pullPolicy: IfNotPresent
+  pullPolicy: Always  # Force fresh pulls for development
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
 
