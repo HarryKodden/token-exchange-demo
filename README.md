@@ -411,7 +411,7 @@ sequenceDiagram
 
     Note over B,O: Token Exchange Flow
     B->>O: POST /token (grant_type=token-exchange)
-    Note right: subject_token=refresh_token<br/>requested_token_type=refresh_token
+    Note over B,O: subject_token=refresh_token<br/>requested_token_type=refresh_token
     O-->>B: new_refresh_token
 
     Note over B,O: Refresh Token Flow
