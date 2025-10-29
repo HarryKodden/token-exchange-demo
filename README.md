@@ -392,18 +392,6 @@ This application demonstrates a complete OAuth2 ecosystem with the following flo
 
 ### Complete Token Lifecycle
 
-<style>
-.note {
-  fill: #e8f5e8 !important;
-  stroke: #4caf50 !important;
-  stroke-width: 2px !important;
-}
-.noteText {
-  fill: #2e7d32 !important;
-  font-weight: bold !important;
-}
-</style>
-
 ```mermaid
 sequenceDiagram
     participant U as User
