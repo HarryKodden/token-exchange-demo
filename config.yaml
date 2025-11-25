@@ -85,6 +85,7 @@ curl_templates:
   a: |
     curl -X POST {registration_endpoint}
       -H "Content-Type: application/json"
+      -H "X-API-KEY: {api_key}"
       -d {
         "redirect_uris": [],
         "grant_types": [
@@ -98,14 +99,14 @@ curl_templates:
   b: |
     curl -X POST {registration_endpoint}
       -H "Content-Type: application/json"
+      -H "X-API-KEY: {api_key}"
       -d {
         "grant_types": [
             "client_credentials",
-            "authorization_code",
             "refresh_token",
             "urn:ietf:params:oauth:grant-type:device_code"
         ],
-        "redirect_uris": ["http://localhost:8080/callback"],
+        "redirect_uris": [""],
         "scope": "openid profile offline_access",
         "audience": [
             "{backend-client-id}"
@@ -169,10 +170,15 @@ curl_templates:
       -H "Accept: application/json"
 
 substitution_rules:
-  # Step a: No substitutions needed (creates client credentials)
+  # Step a: Substitute API key
+  a:
+    headers:
+      "{api_key}": "api_key"
 
-  # Step b: Replace backend client ID from step a
+  # Step b: Replace backend client ID from step a, and API key
   b:
+    headers:
+      "{api_key}": "api_key"
     data:
       "{backend-client-id}": "a.client_id"
 

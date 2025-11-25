@@ -130,6 +130,9 @@ if 'debug_test_json' not in st.session_state:
 if 'show_response_modal' not in st.session_state:
     st.session_state.show_response_modal = None
     logger.debug("📝 Initialized show_response_modal")
+if 'api_key' not in st.session_state:
+    st.session_state.api_key = ""
+    logger.debug("📝 Initialized api_key")
 
 logger.info("✅ Session state initialization completed")
 
@@ -160,8 +163,8 @@ def validate_oauth_server(server_url: str) -> tuple[bool, str, Optional[Dict[str
 
     try:
         # Construct well-known discovery URL
-#       discovery_url = urljoin(server_url.rstrip('/') + '/', '.well-known/openid-configuration')
-        discovery_url = urljoin(server_url.rstrip('/') + '/', '.well-known/oauth-authorization-server')
+        discovery_url = urljoin(server_url.rstrip('/') + '/', '.well-known/openid-configuration')
+        # discovery_url = urljoin(server_url.rstrip('/') + '/', '.well-known/oauth-authorization-server')
 
         logger.debug(f"📡 Discovery URL: {discovery_url}")
 
@@ -839,6 +842,8 @@ def substitute_dynamic_values(step: str, url: str, headers: Dict, data, auth) ->
         """Resolve a step.field reference to actual value"""
         
         logger.debug(f"🔍 Resolving reference: {ref}")
+        if ref == 'api_key':
+            return st.session_state.get('api_key', '')
         if '.' in ref:
             step_id, field = ref.split('.', 1)
             if step_id in prev_responses:
@@ -976,6 +981,7 @@ def get_dynamic_curl_commands():
             command = command.replace('{token_endpoint}', get_endpoint_with_default('token_endpoint', '/token'))
             command = command.replace('{userinfo_endpoint}', get_endpoint_with_default('userinfo_endpoint', '/userinfo'))
             command = command.replace('{introspection_endpoint}', get_endpoint_with_default('introspection_endpoint', '/introspect'))
+            command = command.replace('{api_key}', st.session_state.get('api_key', ''))
 
             commands[step_id] = command
 
@@ -1173,6 +1179,16 @@ def show_api_modal(step: str, title: str):
 if not st.session_state.oauth_server_validated:
     show_oauth_setup()
     st.stop()  # Stop execution here to prevent showing main content
+
+# API Key Configuration
+st.markdown("### 🔑 API Configuration")
+api_key = st.text_input("X-API-KEY (required for client registration)", value=st.session_state.api_key, type='password', help="Enter the API key required for steps A and B")
+if api_key != st.session_state.api_key:
+    st.session_state.api_key = api_key
+    if st.session_state.oauth_server_validated:
+        st.session_state.curl_commands = get_dynamic_curl_commands()
+        st.session_state.curl_commands_initialized = True
+        logger.info("🔧 CURL commands regenerated with new API key")
 
 # Create three columns for the different sections
 col1, col2, col3 = st.columns(3)
